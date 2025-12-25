@@ -175,12 +175,23 @@ public static class ApiEndpoints
             .WithSummary("Get metrics history")
             .WithDescription("Returns historical metrics data for charting");
 
-        // Console commands endpoint
+        // Console commands endpoint (legacy)
         api.MapPost("/console/execute", ExecuteConsoleCommand)
             .WithName("ExecuteConsoleCommand")
             .WithSummary("Execute console command")
             .WithDescription("Executes a console command on the server. Available: status, help, startup, shutdown, add, remove, restart, message, list, config")
             .WithTags("Console");
+
+        // CLI Commands endpoints (new - uses CliCommandService)
+        var cli = api.MapGroup("/cli").WithTags("CLI");
+        cli.MapGet("/commands", GetCliCommands)
+            .WithName("GetCliCommands")
+            .WithSummary("Get available CLI commands")
+            .WithDescription("Returns list of all available CLI commands with descriptions and usage");
+        cli.MapPost("/execute", ExecuteCliCommand)
+            .WithName("ExecuteCliCommand")
+            .WithSummary("Execute CLI command")
+            .WithDescription("Executes a CLI command with arguments");
 
         // Health check endpoints
         var health = api.MapGroup("/health").WithTags("Health");
@@ -1987,6 +1998,34 @@ public static class ApiEndpoints
             failed = result.Failed,
             success = result.Success
         });
+    }
+
+    // CLI Command handlers
+    private static IResult GetCliCommands(ICliCommandService cliService)
+    {
+        var commands = cliService.GetCommands();
+        return Results.Ok(new { commands });
+    }
+
+    private static async Task<IResult> ExecuteCliCommand([FromBody] CliCommandRequest request, ICliCommandService cliService)
+    {
+        if (string.IsNullOrWhiteSpace(request.Command))
+            return Results.BadRequest(new { error = "Command is required" });
+
+        var args = request.Arguments ?? Array.Empty<string>();
+        var result = await cliService.ExecuteCommandAsync(request.Command, args);
+        
+        return Results.Ok(new { 
+            success = result.Success,
+            output = result.Output,
+            error = result.Error
+        });
+    }
+
+    private record CliCommandRequest
+    {
+        public string Command { get; init; } = "";
+        public string[]? Arguments { get; init; }
     }
 
     private record MatchStatsSubmitRequest

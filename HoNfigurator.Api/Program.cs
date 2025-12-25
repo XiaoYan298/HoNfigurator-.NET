@@ -194,6 +194,23 @@ builder.Services.AddSingleton<IMatchStatsService>(sp =>
     return new MatchStatsService(logger, config);
 });
 
+// Register CLI command service adapter and service
+builder.Services.AddSingleton<ICliGameServerManager>(sp =>
+{
+    var serverManager = sp.GetRequiredService<IGameServerManager>();
+    return new HoNfigurator.Api.Services.CliGameServerManagerAdapter(serverManager);
+});
+
+builder.Services.AddSingleton<ICliCommandService>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<CliCommandService>>();
+    var cliServerManager = sp.GetRequiredService<ICliGameServerManager>();
+    var config = sp.GetRequiredService<HoNConfiguration>();
+    var replayManager = sp.GetService<ReplayManager>();
+    var patchingService = sp.GetService<IPatchingService>();
+    return new CliCommandService(logger, cliServerManager, config, replayManager, patchingService);
+});
+
 // Register notification and chart services
 builder.Services.AddSingleton<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IChartDataService, ChartDataService>();
