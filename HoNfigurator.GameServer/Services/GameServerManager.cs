@@ -25,6 +25,7 @@ public interface IGameServerManager
     ServerStatusResponse GetStatus();
     void Initialize(int totalServers, int startingPort, int startingVoicePort);
     void AddServer(GameServerInstance server);
+    int AddNewServer();
     bool RemoveServer(int id);
     void ClearServers();
     void UpdateProcessStats();
@@ -641,6 +642,31 @@ public class GameServerManager : IGameServerManager
     {
         _instances.TryAdd(server.Id, server);
         _logger.LogInformation("Added server {Id}: {Name}", server.Id, server.Name);
+    }
+
+    public int AddNewServer()
+    {
+        // Find next available ID
+        var maxId = _instances.Keys.DefaultIfEmpty(0).Max();
+        var newId = maxId + 1;
+        
+        // Calculate ports based on existing servers
+        var basePort = Configuration?.HonData.StartingGamePort ?? 10001;
+        var baseVoicePort = Configuration?.HonData.StartingVoicePort ?? 10061;
+        
+        var server = new GameServerInstance
+        {
+            Id = newId,
+            Name = $"{_serverName} #{newId}",
+            Port = basePort + maxId,
+            VoicePort = baseVoicePort + maxId,
+            Status = ServerStatus.Offline
+        };
+        
+        _instances.TryAdd(newId, server);
+        _logger.LogInformation("Added new server {Id}: {Name} (Port: {Port})", newId, server.Name, server.Port);
+        
+        return newId;
     }
 
     public bool RemoveServer(int id)

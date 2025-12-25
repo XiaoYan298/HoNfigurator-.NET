@@ -165,6 +165,69 @@ public class ApplicationData
 
     [JsonPropertyName("mqtt")]
     public MqttSettings? Mqtt { get; set; }
+
+    [JsonPropertyName("auto_scaling")]
+    public AutoScalingSettings? AutoScaling { get; set; }
+
+    [JsonPropertyName("replay_upload")]
+    public ReplayUploadSettings? ReplayUpload { get; set; }
+}
+
+public class ReplayUploadSettings
+{
+    [JsonPropertyName("enabled")]
+    public bool Enabled { get; set; } = false;
+
+    [JsonPropertyName("provider")]
+    public string Provider { get; set; } = "local";
+
+    [JsonPropertyName("connection_string")]
+    public string ConnectionString { get; set; } = "";
+
+    [JsonPropertyName("container_name")]
+    public string ContainerName { get; set; } = "replays";
+
+    [JsonPropertyName("base_path")]
+    public string BasePath { get; set; } = "";
+
+    [JsonPropertyName("auto_upload_on_match_end")]
+    public bool AutoUploadOnMatchEnd { get; set; } = true;
+
+    [JsonPropertyName("retry_count")]
+    public int RetryCount { get; set; } = 3;
+
+    [JsonPropertyName("retry_delay_seconds")]
+    public int RetryDelaySeconds { get; set; } = 5;
+
+    [JsonPropertyName("base_url")]
+    public string BaseUrl { get; set; } = "";
+}
+
+public class AutoScalingSettings
+{
+    [JsonPropertyName("enabled")]
+    public bool Enabled { get; set; } = false;
+
+    [JsonPropertyName("min_servers")]
+    public int MinServers { get; set; } = 1;
+
+    [JsonPropertyName("max_servers")]
+    public int MaxServers { get; set; } = 10;
+
+    [JsonPropertyName("scale_up_threshold")]
+    public int ScaleUpThreshold { get; set; } = 80;
+
+    [JsonPropertyName("scale_down_threshold")]
+    public int ScaleDownThreshold { get; set; } = 20;
+
+    [JsonPropertyName("cooldown_seconds")]
+    public int CooldownSeconds { get; set; } = 300;
+
+    [JsonPropertyName("check_interval_seconds")]
+    public int CheckIntervalSeconds { get; set; } = 60;
+
+    [JsonPropertyName("min_ready_servers")]
+    public int MinReadyServers { get; set; } = 1;
 }
 
 public class MqttSettings
@@ -199,8 +262,20 @@ public class DiscordSettings
     [JsonPropertyName("bot_token")]
     public string BotToken { get; set; } = "";
 
+    [JsonPropertyName("notification_channel_id")]
+    public string NotificationChannelId { get; set; } = "";
+
     [JsonPropertyName("enable_notifications")]
     public bool EnableNotifications { get; set; } = true;
+
+    [JsonPropertyName("notify_match_start")]
+    public bool NotifyMatchStart { get; set; } = true;
+
+    [JsonPropertyName("notify_match_end")]
+    public bool NotifyMatchEnd { get; set; } = true;
+
+    [JsonPropertyName("notify_player_join_leave")]
+    public bool NotifyPlayerJoinLeave { get; set; } = false;
 }
 
 public class TimerSettings

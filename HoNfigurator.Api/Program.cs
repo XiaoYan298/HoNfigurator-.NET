@@ -3,6 +3,7 @@ using HoNfigurator.Api.Hubs;
 using HoNfigurator.Api.Services;
 using HoNfigurator.Core.Auth;
 using HoNfigurator.Core.Connectors;
+using HoNfigurator.Core.Discord;
 using HoNfigurator.Core.Events;
 using HoNfigurator.Core.Health;
 using HoNfigurator.Core.Metrics;
@@ -10,6 +11,7 @@ using HoNfigurator.Core.Notifications;
 using HoNfigurator.Core.Charts;
 using HoNfigurator.Core.Parsing;
 using HoNfigurator.Core.Services;
+using HoNfigurator.Core.Statistics;
 using HoNfigurator.GameServer.Services;
 using Scalar.AspNetCore;
 using HoNfigurator.Core.Models;
@@ -112,6 +114,15 @@ builder.Services.AddSingleton<IMqttHandler>(sp =>
     return new MqttHandler(logger, config);
 });
 
+// Register Discord Bot Service
+builder.Services.AddSingleton<IDiscordBotService>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<DiscordBotService>>();
+    var config = sp.GetRequiredService<HoNConfiguration>();
+    var mqttHandler = sp.GetRequiredService<IMqttHandler>();
+    return new DiscordBotService(logger, config, mqttHandler);
+});
+
 // Register GameServerListener for receiving status updates from game servers
 builder.Services.AddSingleton<IGameServerListener>(sp =>
 {
@@ -134,6 +145,21 @@ builder.Services.AddSingleton<BanManager>();
 builder.Services.AddSingleton<AuthService>(sp => new AuthService(sp.GetRequiredService<HoNConfiguration>()));
 builder.Services.AddSingleton<AdvancedMetricsService>();
 
+// Register match statistics service
+builder.Services.AddSingleton<IMatchStatisticsService>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<MatchStatisticsService>>();
+    return new MatchStatisticsService(logger);
+});
+
+// Register replay upload service
+builder.Services.AddSingleton<IReplayUploadService>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<ReplayUploadService>>();
+    var config = sp.GetRequiredService<HoNConfiguration>();
+    return new ReplayUploadService(logger, config);
+});
+
 // Register notification and chart services
 builder.Services.AddSingleton<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IChartDataService, ChartDataService>();
@@ -146,6 +172,16 @@ builder.Services.AddHostedService<NotificationBroadcastService>();
 
 // Add ConnectionManagerService for auto-connect to MasterServer/ChatServer
 builder.Services.AddHostedService<ConnectionManagerService>();
+
+// Register Auto-scaling service (also as hosted service for background processing)
+builder.Services.AddSingleton<AutoScalingService>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<AutoScalingService>>();
+    var serverManager = sp.GetRequiredService<IGameServerManager>();
+    var config = sp.GetRequiredService<HoNConfiguration>();
+    return new AutoScalingService(logger, serverManager, config);
+});
+builder.Services.AddHostedService(sp => sp.GetRequiredService<AutoScalingService>());
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -273,6 +309,18 @@ if (mqttHandler.IsEnabled)
 else
 {
     Console.WriteLine("    MQTT disabled (enable in config to use)");
+}
+
+// Start Discord bot if enabled
+var discordBot = app.Services.GetRequiredService<IDiscordBotService>();
+if (discordBot.IsEnabled)
+{
+    await discordBot.StartAsync();
+    Console.WriteLine("    Discord bot starting...");
+}
+else
+{
+    Console.WriteLine("    Discord bot disabled (set bot_token in config to use)");
 }
 
 app.Run();

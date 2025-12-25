@@ -7,6 +7,7 @@ using HoNfigurator.Core.Auth;
 using HoNfigurator.Core.Metrics;
 using HoNfigurator.Core.Notifications;
 using HoNfigurator.Core.Charts;
+using HoNfigurator.Core.Statistics;
 using HoNfigurator.GameServer.Services;
 using System.Text.Json;
 using HoNfigurator.Core.Events;
@@ -114,6 +115,41 @@ public static class ApiEndpoints
             .WithName("DownloadLog")
             .WithSummary("Download server log")
             .WithDescription("Downloads the log file for a specific server");
+
+        // Statistics endpoints
+        var stats = api.MapGroup("/statistics").WithTags("Statistics");
+        stats.MapGet("/summary", GetStatisticsSummary)
+            .WithName("GetStatisticsSummary")
+            .WithSummary("Get overall statistics summary")
+            .WithDescription("Returns aggregated statistics including total matches, players, and play time");
+        stats.MapGet("/matches", GetRecentMatches)
+            .WithName("GetRecentMatches")
+            .WithSummary("Get recent matches")
+            .WithDescription("Returns a list of recent matches with details");
+        stats.MapGet("/matches/{id:long}", GetMatch)
+            .WithName("GetMatch")
+            .WithSummary("Get match details")
+            .WithDescription("Returns details of a specific match");
+        stats.MapGet("/players/top", GetTopPlayers)
+            .WithName("GetTopPlayers")
+            .WithSummary("Get top players by win rate")
+            .WithDescription("Returns players with highest win rates");
+        stats.MapGet("/players/active", GetMostActivePlayers)
+            .WithName("GetMostActivePlayers")
+            .WithSummary("Get most active players")
+            .WithDescription("Returns players with most matches played");
+        stats.MapGet("/players/{name}", GetPlayerStats)
+            .WithName("GetPlayerStats")
+            .WithSummary("Get player statistics")
+            .WithDescription("Returns statistics for a specific player");
+        stats.MapGet("/servers", GetAllServerStats)
+            .WithName("GetAllServerStats")
+            .WithSummary("Get all server statistics")
+            .WithDescription("Returns statistics for all servers");
+        stats.MapGet("/daily", GetDailyStats)
+            .WithName("GetDailyStats")
+            .WithSummary("Get daily statistics")
+            .WithDescription("Returns statistics grouped by day");
 
         // Replays endpoints
         var replays = api.MapGroup("/replays").WithTags("Replays");
@@ -231,6 +267,29 @@ public static class ApiEndpoints
             .WithSummary("Delete a replay")
             .WithDescription("Permanently deletes a replay file");
 
+        // Replay upload endpoints
+        var replayUpload = api.MapGroup("/replays/upload").WithTags("Replay Upload");
+        replayUpload.MapPost("/{matchId}", UploadReplay)
+            .WithName("UploadReplay")
+            .WithSummary("Upload a replay")
+            .WithDescription("Uploads a replay file to cloud storage");
+        replayUpload.MapGet("/", GetUploadedReplays)
+            .WithName("GetUploadedReplays")
+            .WithSummary("List uploaded replays")
+            .WithDescription("Returns list of uploaded replays with shareable links");
+        replayUpload.MapGet("/link/{matchId}", GetShareableLink)
+            .WithName("GetShareableLink")
+            .WithSummary("Get shareable link")
+            .WithDescription("Returns the shareable link for a replay");
+        replayUpload.MapDelete("/{matchId}", DeleteUploadedReplay)
+            .WithName("DeleteUploadedReplay")
+            .WithSummary("Delete uploaded replay")
+            .WithDescription("Deletes an uploaded replay from cloud storage");
+        replayUpload.MapGet("/settings", GetUploadSettings)
+            .WithName("GetUploadSettings")
+            .WithSummary("Get upload settings")
+            .WithDescription("Returns current replay upload settings");
+
         // Events endpoints
         var events = api.MapGroup("/events").WithTags("Events");
         events.MapGet("/", GetEvents)
@@ -261,6 +320,21 @@ public static class ApiEndpoints
             .WithSummary("Get API version")
             .WithDescription("Returns the API version and framework information")
             .WithTags("General");
+
+        // Auto-scaling endpoints
+        var scaling = api.MapGroup("/scaling").WithTags("Auto-scaling");
+        scaling.MapGet("/status", GetAutoScalingStatus)
+            .WithName("GetAutoScalingStatus")
+            .WithSummary("Get auto-scaling status")
+            .WithDescription("Returns current auto-scaling configuration and status");
+        scaling.MapPost("/scale-up", ManualScaleUp)
+            .WithName("ManualScaleUp")
+            .WithSummary("Manually scale up")
+            .WithDescription("Manually triggers adding a new server");
+        scaling.MapPost("/scale-down", ManualScaleDown)
+            .WithName("ManualScaleDown")
+            .WithSummary("Manually scale down")
+            .WithDescription("Manually triggers removing a server");
 
         // Auth endpoints
         var auth = api.MapGroup("/auth").WithTags("Authentication");
@@ -1444,6 +1518,158 @@ public static class ApiEndpoints
     {
         var summary = chartService.GetMatchStatsSummary(days > 0 ? days : 7);
         return Results.Ok(summary);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Statistics Endpoints
+    // ═══════════════════════════════════════════════════════════════
+
+    private static async Task<IResult> GetStatisticsSummary(IMatchStatisticsService statsService)
+    {
+        var summary = await statsService.GetOverallSummaryAsync();
+        return Results.Ok(summary);
+    }
+
+    private static async Task<IResult> GetRecentMatches([FromQuery] int count, IMatchStatisticsService statsService)
+    {
+        var matches = await statsService.GetRecentMatchesAsync(count > 0 ? count : 20);
+        return Results.Ok(new { matches, count = matches.Count });
+    }
+
+    private static async Task<IResult> GetMatch(long id, IMatchStatisticsService statsService)
+    {
+        var match = await statsService.GetMatchAsync(id);
+        if (match == null)
+            return Results.NotFound(new { error = "Match not found" });
+        return Results.Ok(match);
+    }
+
+    private static async Task<IResult> GetTopPlayers([FromQuery] int count, IMatchStatisticsService statsService)
+    {
+        var players = await statsService.GetTopPlayersAsync(count > 0 ? count : 10);
+        return Results.Ok(new { players, count = players.Count });
+    }
+
+    private static async Task<IResult> GetMostActivePlayers([FromQuery] int count, IMatchStatisticsService statsService)
+    {
+        var players = await statsService.GetMostActivePlayersAsync(count > 0 ? count : 10);
+        return Results.Ok(new { players, count = players.Count });
+    }
+
+    private static async Task<IResult> GetPlayerStats(string name, IMatchStatisticsService statsService)
+    {
+        var stats = await statsService.GetPlayerStatsAsync(name);
+        if (stats == null)
+            return Results.NotFound(new { error = "Player not found" });
+        return Results.Ok(stats);
+    }
+
+    private static async Task<IResult> GetAllServerStats(IMatchStatisticsService statsService)
+    {
+        var stats = await statsService.GetAllServerStatsAsync();
+        return Results.Ok(new { servers = stats, count = stats.Count });
+    }
+
+    private static async Task<IResult> GetDailyStats([FromQuery] int days, IMatchStatisticsService statsService)
+    {
+        var stats = await statsService.GetDailyStatsAsync(days > 0 ? days : 7);
+        return Results.Ok(new { stats, count = stats.Count, periodDays = days > 0 ? days : 7 });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Auto-scaling Endpoints
+    // ═══════════════════════════════════════════════════════════════
+
+    private static IResult GetAutoScalingStatus(AutoScalingService? scalingService)
+    {
+        if (scalingService == null)
+            return Results.Ok(new { enabled = false, message = "Auto-scaling service not available" });
+        return Results.Ok(scalingService.GetStatus());
+    }
+
+    private static async Task<IResult> ManualScaleUp(AutoScalingService? scalingService)
+    {
+        if (scalingService == null)
+            return Results.BadRequest(new { error = "Auto-scaling service not available" });
+        var result = await scalingService.ManualScaleUpAsync();
+        if (result)
+            return Results.Ok(new { success = true, message = "Scale up initiated" });
+        return Results.BadRequest(new { error = "Cannot scale up - already at maximum servers" });
+    }
+
+    private static async Task<IResult> ManualScaleDown(AutoScalingService? scalingService)
+    {
+        if (scalingService == null)
+            return Results.BadRequest(new { error = "Auto-scaling service not available" });
+        var result = await scalingService.ManualScaleDownAsync();
+        if (result)
+            return Results.Ok(new { success = true, message = "Scale down initiated" });
+        return Results.BadRequest(new { error = "Cannot scale down - already at minimum servers" });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Replay Upload Endpoints
+    // ═══════════════════════════════════════════════════════════════
+
+    private static async Task<IResult> UploadReplay(string matchId, HttpRequest request, IReplayUploadService uploadService)
+    {
+        if (!request.HasFormContentType)
+            return Results.BadRequest(new { error = "Expected form data with replay file" });
+
+        var form = await request.ReadFormAsync();
+        var file = form.Files.GetFile("file");
+        
+        if (file == null || file.Length == 0)
+            return Results.BadRequest(new { error = "No file uploaded" });
+
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms);
+        var data = ms.ToArray();
+
+        var result = await uploadService.UploadReplayAsync(data, matchId, file.FileName);
+        
+        if (result.Success)
+            return Results.Ok(new { 
+                success = true, 
+                url = result.Url, 
+                shareableLink = result.ShareableLink,
+                fileSizeBytes = result.FileSizeBytes
+            });
+        
+        return Results.BadRequest(new { error = result.Error });
+    }
+
+    private static async Task<IResult> GetUploadedReplays([FromQuery] int count, IReplayUploadService uploadService)
+    {
+        var replays = await uploadService.GetUploadedReplaysAsync(count > 0 ? count : 50);
+        return Results.Ok(new { replays, count = replays.Count });
+    }
+
+    private static async Task<IResult> GetShareableLink(string matchId, IReplayUploadService uploadService)
+    {
+        var link = await uploadService.GetShareableLinkAsync(matchId);
+        if (link == null)
+            return Results.NotFound(new { error = "Replay not found" });
+        return Results.Ok(new { matchId, shareableLink = link });
+    }
+
+    private static async Task<IResult> DeleteUploadedReplay(string matchId, IReplayUploadService uploadService)
+    {
+        var result = await uploadService.DeleteUploadedReplayAsync(matchId);
+        if (result)
+            return Results.Ok(new { success = true, message = "Replay deleted" });
+        return Results.NotFound(new { error = "Replay not found" });
+    }
+
+    private static IResult GetUploadSettings(IReplayUploadService uploadService)
+    {
+        var settings = uploadService.Settings;
+        return Results.Ok(new {
+            enabled = settings.Enabled,
+            provider = settings.Provider,
+            autoUploadOnMatchEnd = settings.AutoUploadOnMatchEnd,
+            baseUrl = settings.BaseUrl
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════

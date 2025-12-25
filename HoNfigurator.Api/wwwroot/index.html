@@ -818,6 +818,16 @@
                         class="w-full px-4 py-2.5 text-left font-medium transition-all rounded-r-lg group">
                     <i class="fas fa-film mr-3 group-hover:scale-110 transition-transform"></i><span x-text="t('replays')"></span>
                 </button>
+                <button @click="activeTab = 'statistics'; loadStatistics(); sidebarOpen = false" 
+                        :class="activeTab === 'statistics' ? 'bg-gradient-to-r from-blue-600/20 to-transparent text-blue-400 border-l-2 border-blue-500' : 'text-gray-400 hover:bg-gray-700/30 hover:text-white border-l-2 border-transparent'"
+                        class="w-full px-4 py-2.5 text-left font-medium transition-all rounded-r-lg group">
+                    <i class="fas fa-chart-bar mr-3 group-hover:scale-110 transition-transform"></i><span x-text="t('statistics')"></span>
+                </button>
+                <button @click="activeTab = 'scaling'; loadScalingStatus(); sidebarOpen = false" 
+                        :class="activeTab === 'scaling' ? 'bg-gradient-to-r from-blue-600/20 to-transparent text-blue-400 border-l-2 border-blue-500' : 'text-gray-400 hover:bg-gray-700/30 hover:text-white border-l-2 border-transparent'"
+                        class="w-full px-4 py-2.5 text-left font-medium transition-all rounded-r-lg group">
+                    <i class="fas fa-expand-arrows-alt mr-3 group-hover:scale-110 transition-transform"></i><span x-text="t('autoScaling')"></span>
+                </button>
             </nav>
             
             <!-- Status Summary in Sidebar -->
@@ -2193,6 +2203,259 @@
                 </div>
             </div>
         </div>
+
+        <!-- Tab: Statistics -->
+        <div x-show="activeTab === 'statistics'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+            <div class="space-y-6">
+                <!-- Statistics Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-gradient-to-br from-blue-600/20 to-blue-800/20 rounded-xl p-4 border border-blue-500/30">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm" x-text="t('totalMatches')"></p>
+                                <p class="text-2xl font-bold text-blue-400" x-text="statistics.summary?.totalMatches || 0"></p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-gamepad text-blue-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-600/20 to-green-800/20 rounded-xl p-4 border border-green-500/30">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm" x-text="t('totalPlayers')"></p>
+                                <p class="text-2xl font-bold text-green-400" x-text="statistics.summary?.totalPlayers || 0"></p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-users text-green-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-600/20 to-purple-800/20 rounded-xl p-4 border border-purple-500/30">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm" x-text="t('avgDuration')"></p>
+                                <p class="text-2xl font-bold text-purple-400" x-text="statistics.summary?.avgDuration || '-'"></p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-clock text-purple-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-orange-600/20 to-orange-800/20 rounded-xl p-4 border border-orange-500/30">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm" x-text="t('matchesToday')"></p>
+                                <p class="text-2xl font-bold text-orange-400" x-text="statistics.summary?.matchesToday || 0"></p>
+                            </div>
+                            <div class="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-calendar-day text-orange-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Matches & Top Players -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Recent Matches -->
+                    <div class="bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-history text-blue-400 mr-2"></i>
+                            <span x-text="t('recentMatches')"></span>
+                        </h3>
+                        <div class="space-y-2 max-h-80 overflow-y-auto">
+                            <template x-if="statistics.recentMatches?.length === 0">
+                                <p class="text-gray-500 text-center py-4" x-text="t('noMatches')"></p>
+                            </template>
+                            <template x-for="match in statistics.recentMatches" :key="match.matchId">
+                                <div class="bg-gray-700/30 rounded-lg p-3 hover:bg-gray-700/50 transition-colors">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <span class="font-mono text-blue-400">#<span x-text="match.matchId"></span></span>
+                                            <span class="text-gray-500 text-sm ml-2" x-text="match.mapName || 'Unknown Map'"></span>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="text-gray-400 text-sm" x-text="match.duration || '-'"></span>
+                                            <span class="text-gray-600 text-xs block" x-text="match.endTime"></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center mt-2 text-sm">
+                                        <i class="fas fa-users text-gray-500 mr-2"></i>
+                                        <span class="text-gray-400" x-text="match.playerCount + ' players'"></span>
+                                        <span class="mx-2 text-gray-600">โ€ข</span>
+                                        <span class="text-gray-400" x-text="'Server #' + match.serverId"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Top Players -->
+                    <div class="bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-trophy text-yellow-400 mr-2"></i>
+                            <span x-text="t('topPlayers')"></span>
+                        </h3>
+                        <div class="space-y-2 max-h-80 overflow-y-auto">
+                            <template x-if="statistics.topPlayers?.length === 0">
+                                <p class="text-gray-500 text-center py-4" x-text="t('noPlayers')"></p>
+                            </template>
+                            <template x-for="(player, index) in statistics.topPlayers" :key="player.playerName">
+                                <div class="bg-gray-700/30 rounded-lg p-3 hover:bg-gray-700/50 transition-colors flex items-center">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3"
+                                         :class="index === 0 ? 'bg-yellow-500/30 text-yellow-400' : index === 1 ? 'bg-gray-400/30 text-gray-300' : index === 2 ? 'bg-orange-500/30 text-orange-400' : 'bg-gray-600/30 text-gray-500'">
+                                        <span class="font-bold text-sm" x-text="index + 1"></span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="font-medium" x-text="player.playerName"></span>
+                                        <div class="text-sm text-gray-500">
+                                            <span x-text="player.wins + ' wins'"></span>
+                                            <span class="mx-1">โ€ข</span>
+                                            <span x-text="player.gamesPlayed + ' games'"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-green-400 font-bold" x-text="(player.winRate * 100).toFixed(1) + '%'"></span>
+                                        <span class="text-gray-500 text-xs block">Win Rate</span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Chart -->
+                <div class="bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-chart-line text-green-400 mr-2"></i>
+                        <span x-text="t('dailyStats')"></span>
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="dailyStatsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Auto-scaling -->
+        <div x-show="activeTab === 'scaling'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+            <div class="space-y-6">
+                <!-- Scaling Status -->
+                <div class="bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold flex items-center">
+                            <i class="fas fa-expand-arrows-alt text-purple-400 mr-2"></i>
+                            <span x-text="t('autoScalingStatus')"></span>
+                        </h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-400" x-text="scaling.enabled ? t('enabled') : t('disabled')"></span>
+                            <span class="w-3 h-3 rounded-full" :class="scaling.enabled ? 'bg-green-500 animate-pulse' : 'bg-gray-500'"></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gray-700/30 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm mb-1" x-text="t('serverCapacity')"></p>
+                            <p class="text-xl font-bold">
+                                <span class="text-blue-400" x-text="scaling.totalServers"></span>
+                                <span class="text-gray-500">/</span>
+                                <span class="text-gray-400" x-text="scaling.maxServers"></span>
+                            </p>
+                            <div class="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-blue-500 transition-all duration-500"
+                                     :style="'width: ' + (scaling.maxServers > 0 ? (scaling.totalServers / scaling.maxServers * 100) : 0) + '%'"></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700/30 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm mb-1" x-text="t('occupancyRate')"></p>
+                            <p class="text-xl font-bold" :class="scaling.occupancyRate > 80 ? 'text-red-400' : scaling.occupancyRate > 50 ? 'text-yellow-400' : 'text-green-400'">
+                                <span x-text="scaling.occupancyRate?.toFixed(1) || 0"></span>%
+                            </p>
+                            <div class="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full transition-all duration-500"
+                                     :class="scaling.occupancyRate > 80 ? 'bg-red-500' : scaling.occupancyRate > 50 ? 'bg-yellow-500' : 'bg-green-500'"
+                                     :style="'width: ' + (scaling.occupancyRate || 0) + '%'"></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700/30 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm mb-1" x-text="t('readyServers')"></p>
+                            <p class="text-xl font-bold">
+                                <span class="text-green-400" x-text="scaling.readyServers || 0"></span>
+                                <span class="text-gray-500 text-sm ml-1">ready</span>
+                            </p>
+                            <p class="text-sm text-gray-500 mt-2">
+                                <span x-text="scaling.occupiedServers || 0"></span> occupied
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Scaling Thresholds -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-gray-700/30 rounded-lg p-4">
+                            <h4 class="font-medium mb-3 flex items-center">
+                                <i class="fas fa-arrow-up text-green-400 mr-2"></i>
+                                <span x-text="t('scaleUpThreshold')"></span>
+                            </h4>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-400">When occupancy ></span>
+                                <span class="text-green-400 font-bold" x-text="scaling.scaleUpThreshold + '%'"></span>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700/30 rounded-lg p-4">
+                            <h4 class="font-medium mb-3 flex items-center">
+                                <i class="fas fa-arrow-down text-red-400 mr-2"></i>
+                                <span x-text="t('scaleDownThreshold')"></span>
+                            </h4>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-400">When occupancy <</span>
+                                <span class="text-red-400 font-bold" x-text="scaling.scaleDownThreshold + '%'"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Last Action & Cooldown -->
+                    <div class="bg-gray-700/30 rounded-lg p-4 mb-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm" x-text="t('lastAction')"></p>
+                                <p class="font-medium" x-text="scaling.lastScaleAction || 'None'"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-gray-400 text-sm" x-text="t('cooldown')"></p>
+                                <p class="font-medium" :class="scaling.inCooldown ? 'text-yellow-400' : 'text-green-400'">
+                                    <template x-if="scaling.inCooldown">
+                                        <span><i class="fas fa-hourglass-half mr-1"></i><span x-text="scaling.cooldownRemainingSeconds + 's'"></span></span>
+                                    </template>
+                                    <template x-if="!scaling.inCooldown">
+                                        <span><i class="fas fa-check mr-1"></i>Ready</span>
+                                    </template>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manual Controls -->
+                    <div class="flex items-center justify-center space-x-4">
+                        <button @click="manualScaleUp()" 
+                                :disabled="scaling.totalServers >= scaling.maxServers"
+                                class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-plus mr-2"></i>
+                            <span x-text="t('scaleUp')"></span>
+                        </button>
+                        <button @click="manualScaleDown()" 
+                                :disabled="scaling.totalServers <= scaling.minServers"
+                                class="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-minus mr-2"></i>
+                            <span x-text="t('scaleDown')"></span>
+                        </button>
+                        <button @click="loadScalingStatus()" 
+                                class="px-6 py-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-xl transition-all border border-gray-600/50">
+                            <i class="fas fa-sync-alt" :class="scalingLoading && 'animate-spin'"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
     </main>
 
@@ -3415,7 +3678,30 @@
                         typeCommand: 'Type command...',
                         // Game Chat
                         gameChat: 'Game Chat',
-                        noChatMessages: 'No chat messages'
+                        noChatMessages: 'No chat messages',
+                        // Statistics
+                        statistics: 'Statistics',
+                        totalMatches: 'Total Matches',
+                        totalPlayers: 'Unique Players',
+                        avgDuration: 'Avg Duration',
+                        matchesToday: 'Today',
+                        recentMatches: 'Recent Matches',
+                        topPlayers: 'Top Players',
+                        dailyStats: 'Daily Statistics',
+                        noMatches: 'No matches recorded yet',
+                        noPlayers: 'No player statistics yet',
+                        // Auto-scaling
+                        autoScaling: 'Auto-scaling',
+                        autoScalingStatus: 'Auto-scaling Status',
+                        serverCapacity: 'Server Capacity',
+                        occupancyRate: 'Occupancy Rate',
+                        readyServers: 'Ready Servers',
+                        scaleUpThreshold: 'Scale Up Threshold',
+                        scaleDownThreshold: 'Scale Down Threshold',
+                        lastAction: 'Last Action',
+                        cooldown: 'Cooldown',
+                        scaleUp: 'Scale Up',
+                        scaleDown: 'Scale Down'
                     },
                     th: {
                         // Header
@@ -3674,6 +3960,31 @@
                 showHealthModal: false,
                 healthData: [],
                 healthLoading: false,
+                // Statistics state
+                statistics: {
+                    summary: null,
+                    recentMatches: [],
+                    topPlayers: [],
+                    dailyStats: []
+                },
+                statisticsLoading: false,
+                dailyStatsChart: null,
+                // Auto-scaling state
+                scaling: {
+                    enabled: false,
+                    totalServers: 0,
+                    occupiedServers: 0,
+                    readyServers: 0,
+                    occupancyRate: 0,
+                    minServers: 1,
+                    maxServers: 10,
+                    scaleUpThreshold: 80,
+                    scaleDownThreshold: 20,
+                    lastScaleAction: 'None',
+                    inCooldown: false,
+                    cooldownRemainingSeconds: 0
+                },
+                scalingLoading: false,
                 
                 async init() {
                     await this.checkAuth();
@@ -4800,6 +5111,150 @@
                         }
                     } catch (error) {
                         this.showToast('Failed to cleanup replays', 'error');
+                    }
+                },
+
+                // Statistics functions
+                async loadStatistics() {
+                    this.statisticsLoading = true;
+                    try {
+                        // Load summary
+                        const summaryResp = await fetch('/api/statistics/summary');
+                        if (summaryResp.ok) {
+                            this.statistics.summary = await summaryResp.json();
+                        }
+                        
+                        // Load recent matches
+                        const matchesResp = await fetch('/api/statistics/matches?count=10');
+                        if (matchesResp.ok) {
+                            const data = await matchesResp.json();
+                            this.statistics.recentMatches = data.matches || [];
+                        }
+                        
+                        // Load top players
+                        const playersResp = await fetch('/api/statistics/players/top?count=10');
+                        if (playersResp.ok) {
+                            const data = await playersResp.json();
+                            this.statistics.topPlayers = data.players || [];
+                        }
+                        
+                        // Load daily stats
+                        const dailyResp = await fetch('/api/statistics/daily?days=7');
+                        if (dailyResp.ok) {
+                            const data = await dailyResp.json();
+                            this.statistics.dailyStats = data.stats || [];
+                            this.updateDailyStatsChart();
+                        }
+                    } catch (error) {
+                        console.error('Failed to load statistics:', error);
+                    } finally {
+                        this.statisticsLoading = false;
+                    }
+                },
+                
+                updateDailyStatsChart() {
+                    const ctx = document.getElementById('dailyStatsChart');
+                    if (!ctx) return;
+                    
+                    if (this.dailyStatsChart) {
+                        this.dailyStatsChart.destroy();
+                    }
+                    
+                    const labels = this.statistics.dailyStats.map(d => d.date);
+                    const matchesData = this.statistics.dailyStats.map(d => d.matchCount);
+                    const playersData = this.statistics.dailyStats.map(d => d.uniquePlayers);
+                    
+                    this.dailyStatsChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Matches',
+                                    data: matchesData,
+                                    borderColor: 'rgb(59, 130, 246)',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Players',
+                                    data: playersData,
+                                    borderColor: 'rgb(16, 185, 129)',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    labels: { color: '#9CA3AF' }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: { color: '#9CA3AF' },
+                                    grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                                },
+                                y: {
+                                    ticks: { color: '#9CA3AF' },
+                                    grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                },
+
+                // Auto-scaling functions
+                async loadScalingStatus() {
+                    this.scalingLoading = true;
+                    try {
+                        const response = await fetch('/api/scaling/status');
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.scaling = { ...this.scaling, ...data };
+                        }
+                    } catch (error) {
+                        console.error('Failed to load scaling status:', error);
+                    } finally {
+                        this.scalingLoading = false;
+                    }
+                },
+                
+                async manualScaleUp() {
+                    try {
+                        const response = await fetch('/api/scaling/scale-up', { method: 'POST' });
+                        const result = await response.json();
+                        if (response.ok) {
+                            this.showToast('Scale up initiated', 'success');
+                            await this.loadScalingStatus();
+                            await this.refresh();
+                        } else {
+                            this.showToast(result.error || 'Failed to scale up', 'error');
+                        }
+                    } catch (error) {
+                        this.showToast('Failed to scale up', 'error');
+                    }
+                },
+                
+                async manualScaleDown() {
+                    try {
+                        const response = await fetch('/api/scaling/scale-down', { method: 'POST' });
+                        const result = await response.json();
+                        if (response.ok) {
+                            this.showToast('Scale down initiated', 'success');
+                            await this.loadScalingStatus();
+                            await this.refresh();
+                        } else {
+                            this.showToast(result.error || 'Failed to scale down', 'error');
+                        }
+                    } catch (error) {
+                        this.showToast('Failed to scale down', 'error');
                     }
                 },
 
