@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="HoNfigurator.Api/HoNfigurator.Api.csproj" />
+  <Project Path="HoNfigurator.Core/HoNfigurator.Core.csproj" />
+  <Project Path="HoNfigurator.GameServer/HoNfigurator.GameServer.csproj" />
+  <Project Path="HoNfigurator.Dashboard/HoNfigurator.Dashboard.csproj" />
+</Solution>
