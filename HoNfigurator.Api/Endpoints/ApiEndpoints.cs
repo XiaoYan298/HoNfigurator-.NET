@@ -771,11 +771,13 @@ public static class ApiEndpoints
     }
 
     private static async Task<IResult> UpdateConfiguration(
-        [FromBody] HoNConfiguration config,
-        IConfigurationService configService)
+        HttpRequest request,
+        IConfigurationService configService,
+        IProxyService proxyService,
+        IGameServerManager serverManager)
     {
-        await configService.SaveConfigurationAsync(config);
-        return Results.Ok(config);
+        // Use the same logic as SaveConfiguration - merge with existing config
+        return await SaveConfiguration(request, configService, proxyService, serverManager);
     }
 
     // Logs endpoints

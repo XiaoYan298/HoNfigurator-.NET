@@ -48,13 +48,13 @@ public class HoNData
     public string HonLogsDirectory { get; set; } = string.Empty;
 
     [JsonPropertyName("svr_masterServer")]
-    public string MasterServer { get; set; } = "http://api.kongor.net";
+    public string MasterServer { get; set; } = "api.kongor.net";
 
     [JsonPropertyName("svr_chatServer")]
-    public string ChatServer { get; set; } = string.Empty;
+    public string ChatServer { get; set; } = "chat.kongor.net";
 
     [JsonPropertyName("svr_patchServer")]
-    public string PatchServer { get; set; } = "http://api.kongor.net/patch";
+    public string PatchServer { get; set; } = "api.kongor.net/patches";
 
     [JsonPropertyName("svr_login")]
     public string Login { get; set; } = string.Empty;
@@ -159,6 +159,21 @@ public class ApplicationData
 {
     [JsonPropertyName("timers")]
     public TimerSettings Timers { get; set; } = new();
+
+    [JsonPropertyName("discord")]
+    public DiscordSettings? Discord { get; set; }
+}
+
+public class DiscordSettings
+{
+    [JsonPropertyName("owner_id")]
+    public string OwnerId { get; set; } = "";
+
+    [JsonPropertyName("bot_token")]
+    public string BotToken { get; set; } = "";
+
+    [JsonPropertyName("enable_notifications")]
+    public bool EnableNotifications { get; set; } = true;
 }
 
 public class TimerSettings
