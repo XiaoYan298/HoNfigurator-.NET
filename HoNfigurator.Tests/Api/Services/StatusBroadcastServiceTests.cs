@@ -230,8 +230,8 @@ public class StatusBroadcastServiceTests
         await service.StartAsync(cts.Token);
         await Task.Delay(100);
 
-        // Assert
-        _hubContextMock.Verify(h => h.Clients, Times.AtLeastOnce);
+        // Assert - verify that ReceiveStatus was called on the All clients
+        _clientMock.Verify(c => c.ReceiveStatus(It.IsAny<ServerStatusResponse>()), Times.AtLeastOnce);
     }
 
     [Fact]
