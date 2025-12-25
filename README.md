@@ -66,16 +66,16 @@ Config file location: `HoNfigurator.Api/bin/Debug/net10.0/config/config.json`
     "hon_logs_directory": "C:\\",                      // Folder for storing logs
 
     // === Server Connection ===
-    "svr_masterServer": "143.14.4.36:55555",          // Master Server (IP:Port)
-    "svr_chatServer": "143.14.4.36:55554",            // Chat Server (IP:Port)
-    "svr_patchServer": "143.14.4.36:55555",           // Patch Server
+    "svr_masterServer": "api.kongor.net",          // Master Server (IP:Port)
+    "svr_chatServer": "chat.kongor.net",            // Chat Server (IP:Port)
+    "svr_patchServer": "api.kongor.net/patch",           // Patch Server
 
     // === Server Account ===
     "svr_login": "YOUR_SERVER_LOGIN",                 // Server account name (not player account)
     "svr_password": "YOUR_SERVER_PASSWORD",           // Server account password
 
     // === Server Identity ===
-    "svr_name": "TH",                                 // Server name (shown in Server List)
+    "svr_name": "NEWERTH",                                 // Server name (shown in Server List)
     "svr_location": "NEWERTH",                        // Region (NEWERTH/US/EU/SEA/etc)
     "svr_priority": "HIGH",                           // Priority (HIGH/NORMAL/LOW)
 
@@ -107,7 +107,7 @@ Config file location: `HoNfigurator.Api/bin/Debug/net10.0/config/config.json`
     // === Advanced ===
     "man_use_cowmaster": false,                       // Use Cowmaster (Central Management)
     "svr_beta_mode": false,                           // Beta Mode
-    "local_ip": "143.14.4.36",                        // Internal IP (leave empty for auto-detect)
+    "local_ip": "127.0.0.1",                        // Internal IP (leave empty for auto-detect)
     "svr_ip": null,                                   // External IP (leave empty for auto-detect)
     "man_version": "4.10.1",                          // HoN Version
 
