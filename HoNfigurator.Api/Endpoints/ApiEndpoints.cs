@@ -8,6 +8,7 @@ using HoNfigurator.Core.Metrics;
 using HoNfigurator.Core.Notifications;
 using HoNfigurator.Core.Charts;
 using HoNfigurator.Core.Statistics;
+using HoNfigurator.Core.Discord;
 using HoNfigurator.GameServer.Services;
 using System.Text.Json;
 using HoNfigurator.Core.Events;
@@ -335,6 +336,29 @@ public static class ApiEndpoints
             .WithName("ManualScaleDown")
             .WithSummary("Manually scale down")
             .WithDescription("Manually triggers removing a server");
+
+        // Discord test endpoints
+        var discord = api.MapGroup("/discord").WithTags("Discord");
+        discord.MapGet("/status", GetDiscordStatus)
+            .WithName("GetDiscordStatus")
+            .WithSummary("Get Discord bot status")
+            .WithDescription("Returns the current status of the Discord bot");
+        discord.MapPost("/test/match-start", TestMatchStartNotification)
+            .WithName("TestMatchStartNotification")
+            .WithSummary("Test match start notification")
+            .WithDescription("Sends a test match started notification to Discord");
+        discord.MapPost("/test/match-end", TestMatchEndNotification)
+            .WithName("TestMatchEndNotification")
+            .WithSummary("Test match end notification")
+            .WithDescription("Sends a test match ended notification to Discord");
+        discord.MapPost("/test/player-join", TestPlayerJoinNotification)
+            .WithName("TestPlayerJoinNotification")
+            .WithSummary("Test player join notification")
+            .WithDescription("Sends a test player joined notification to Discord");
+        discord.MapPost("/test/alert", TestAlertNotification)
+            .WithName("TestAlertNotification")
+            .WithSummary("Test alert notification")
+            .WithDescription("Sends a test alert notification to Discord");
 
         // Auth endpoints
         var auth = api.MapGroup("/auth").WithTags("Authentication");
@@ -1530,8 +1554,9 @@ public static class ApiEndpoints
         return Results.Ok(summary);
     }
 
-    private static async Task<IResult> GetRecentMatches([FromQuery] int count, IMatchStatisticsService statsService)
+    private static async Task<IResult> GetRecentMatches([FromQuery] int count = 20, IMatchStatisticsService? statsService = null)
     {
+        if (statsService == null) return Results.BadRequest(new { error = "Statistics service not available" });
         var matches = await statsService.GetRecentMatchesAsync(count > 0 ? count : 20);
         return Results.Ok(new { matches, count = matches.Count });
     }
@@ -1544,14 +1569,16 @@ public static class ApiEndpoints
         return Results.Ok(match);
     }
 
-    private static async Task<IResult> GetTopPlayers([FromQuery] int count, IMatchStatisticsService statsService)
+    private static async Task<IResult> GetTopPlayers([FromQuery] int count = 10, IMatchStatisticsService? statsService = null)
     {
+        if (statsService == null) return Results.BadRequest(new { error = "Statistics service not available" });
         var players = await statsService.GetTopPlayersAsync(count > 0 ? count : 10);
         return Results.Ok(new { players, count = players.Count });
     }
 
-    private static async Task<IResult> GetMostActivePlayers([FromQuery] int count, IMatchStatisticsService statsService)
+    private static async Task<IResult> GetMostActivePlayers([FromQuery] int count = 10, IMatchStatisticsService? statsService = null)
     {
+        if (statsService == null) return Results.BadRequest(new { error = "Statistics service not available" });
         var players = await statsService.GetMostActivePlayersAsync(count > 0 ? count : 10);
         return Results.Ok(new { players, count = players.Count });
     }
@@ -1570,8 +1597,9 @@ public static class ApiEndpoints
         return Results.Ok(new { servers = stats, count = stats.Count });
     }
 
-    private static async Task<IResult> GetDailyStats([FromQuery] int days, IMatchStatisticsService statsService)
+    private static async Task<IResult> GetDailyStats([FromQuery] int days = 7, IMatchStatisticsService? statsService = null)
     {
+        if (statsService == null) return Results.BadRequest(new { error = "Statistics service not available" });
         var stats = await statsService.GetDailyStatsAsync(days > 0 ? days : 7);
         return Results.Ok(new { stats, count = stats.Count, periodDays = days > 0 ? days : 7 });
     }
@@ -1690,5 +1718,67 @@ public static class ApiEndpoints
             proxy_download_url = status.ProxyDownloadUrl,
             all_satisfied = status.AllSatisfied
         });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Discord Test Endpoints
+    // ═══════════════════════════════════════════════════════════════
+
+    private static IResult GetDiscordStatus(IDiscordBotService discordBot)
+    {
+        return Results.Ok(new {
+            enabled = discordBot.IsEnabled,
+            connected = discordBot.IsConnected,
+            status = discordBot.IsConnected ? "Online" : (discordBot.IsEnabled ? "Offline" : "Disabled")
+        });
+    }
+
+    private static async Task<IResult> TestMatchStartNotification(IDiscordBotService discordBot, IGameServerManager serverManager)
+    {
+        if (!discordBot.IsConnected)
+            return Results.BadRequest(new { error = "Discord bot is not connected" });
+
+        var testPlayers = new List<string> { "TestPlayer1", "TestPlayer2", "TestPlayer3", "TestPlayer4", "TestPlayer5" };
+        var server = serverManager.Instances.FirstOrDefault();
+        var serverName = server?.Name ?? "Test Server";
+        var serverId = server?.Id ?? 1;
+
+        await discordBot.SendMatchStartedAsync(serverId, serverName, testPlayers);
+        return Results.Ok(new { success = true, message = "Match start notification sent" });
+    }
+
+    private static async Task<IResult> TestMatchEndNotification(IDiscordBotService discordBot, IGameServerManager serverManager)
+    {
+        if (!discordBot.IsConnected)
+            return Results.BadRequest(new { error = "Discord bot is not connected" });
+
+        var server = serverManager.Instances.FirstOrDefault();
+        var serverName = server?.Name ?? "Test Server";
+        var serverId = server?.Id ?? 1;
+
+        await discordBot.SendMatchEndedAsync(serverId, serverName, duration: 1847, winner: "Legion");
+        return Results.Ok(new { success = true, message = "Match end notification sent" });
+    }
+
+    private static async Task<IResult> TestPlayerJoinNotification(IDiscordBotService discordBot, IGameServerManager serverManager)
+    {
+        if (!discordBot.IsConnected)
+            return Results.BadRequest(new { error = "Discord bot is not connected" });
+
+        var server = serverManager.Instances.FirstOrDefault();
+        var serverName = server?.Name ?? "Test Server";
+        var serverId = server?.Id ?? 1;
+
+        await discordBot.SendPlayerJoinedAsync(serverId, serverName, "TestPlayer");
+        return Results.Ok(new { success = true, message = "Player join notification sent" });
+    }
+
+    private static async Task<IResult> TestAlertNotification(IDiscordBotService discordBot)
+    {
+        if (!discordBot.IsConnected)
+            return Results.BadRequest(new { error = "Discord bot is not connected" });
+
+        await discordBot.SendAlertAsync("🧪 Test Alert", "This is a test alert from HoNfigurator API");
+        return Results.Ok(new { success = true, message = "Alert notification sent" });
     }
 }

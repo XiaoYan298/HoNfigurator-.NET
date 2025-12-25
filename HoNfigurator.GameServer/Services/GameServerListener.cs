@@ -601,8 +601,8 @@ public class GameServerListener : IGameServerListener
         }
         else if (numClients == 0)
         {
-            // Check if we had players before (match ended)
-            if (_previousPlayers.TryGetValue(serverId, out var prevPlayers) && prevPlayers.Count > 0)
+            // Check if we had players before (match ended) - only trigger once
+            if (_previousPlayers.TryRemove(serverId, out var prevPlayers) && prevPlayers.Count > 0)
             {
                 // Calculate match duration
                 var duration = 0;
