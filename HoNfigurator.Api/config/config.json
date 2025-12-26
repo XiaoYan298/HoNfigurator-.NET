@@ -54,9 +54,9 @@
                                                                }
                                         },
                              "discord":  {
-                                             "owner_id":  "336728876745228290",
-                                             "bot_token":  "MTQ1MzEwNDgyNzc2Mzc4NTc1OA.G7_W47.ZvaB3tvZzfByJuOZWeLJNOl2O5JCqQrsBRL5MU",
-                                             "notification_channel_id":  "1453106819957395670",
+                                             "owner_id":  "",
+                                             "bot_token":  "",
+                                             "notification_channel_id":  "",
                                              "enable_notifications":  true,
                                              "notify_match_start":  true,
                                              "notify_match_end":  true,
@@ -71,7 +71,7 @@
                              "management_portal": {
                                                    "enabled": true,
                                                    "portal_url": "http://localhost:5200",
-                                                   "discord_user_id": "336728876745228290",
+                                                   "discord_user_id": "",
                                                    "auto_register": true,
                                                    "status_report_interval_seconds": 30
                                                }
