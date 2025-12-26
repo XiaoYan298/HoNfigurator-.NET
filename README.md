@@ -277,6 +277,7 @@ Open your browser and navigate to: **http://localhost:5050/scalar/v1**
 | POST | `/api/servers/{id}/restart` | Restart a server |
 | POST | `/api/servers/start-all` | Start all servers |
 | POST | `/api/servers/stop-all` | Stop all servers |
+| POST | `/api/servers/add-all` | Add servers up to max CPU capacity |
 | GET | `/api/config` | View configuration |
 | POST | `/api/config` | Save configuration |
 | GET | `/api/health` | Health check |
@@ -369,9 +370,8 @@ HoNfigurator-dotnet/
 │   ├── Models/                 # Data Models
 │   ├── Services/               # Core Services
 │   └── Protocol/               # Packet Parsing
-├── HoNfigurator.GameServer/    # Game Server Management
-│   └── Services/               # Game Server Services
-└── HoNfigurator.Dashboard/     # Windows Forms Dashboard (Optional)
+└── HoNfigurator.GameServer/    # Game Server Management
+    └── Services/               # Game Server Services
 ```
 
 ---
