@@ -71,8 +71,8 @@ $RECYCLE.BIN/
 # macOS
 .DS_Store
 
-# Config files with sensitive data (optional - uncomment if needed)
-# **/config/config.json
+# Config files with sensitive data
+**/config/config.json
 
 # Replays
 **/replays/*
