@@ -401,29 +401,6 @@ public static class ApiEndpoints
             .WithSummary("Disable a task")
             .WithDescription("Disables a scheduled task");
 
-        // Ban management endpoints
-        var bans = api.MapGroup("/bans").WithTags("Ban Management");
-        bans.MapGet("/", GetBans)
-            .WithName("GetBans")
-            .WithSummary("List all bans")
-            .WithDescription("Returns all active player bans");
-        bans.MapGet("/{accountId:int}", GetBan)
-            .WithName("GetBan")
-            .WithSummary("Get ban details")
-            .WithDescription("Returns details of a specific ban");
-        bans.MapPost("/", CreateBan)
-            .WithName("CreateBan")
-            .WithSummary("Create a ban")
-            .WithDescription("Creates a new player ban");
-        bans.MapDelete("/{accountId:int}", DeleteBan)
-            .WithName("DeleteBan")
-            .WithSummary("Delete a ban")
-            .WithDescription("Removes a player ban");
-        bans.MapGet("/check/{accountId:int}", CheckBan)
-            .WithName("CheckBan")
-            .WithSummary("Check if player is banned")
-            .WithDescription("Checks if a player is currently banned");
-
         // Replay management endpoints  
         var replaysMgmt = api.MapGroup("/replays/manage").WithTags("Replays");
         replaysMgmt.MapGet("/stats", GetReplayStats)
@@ -1821,45 +1798,6 @@ public static class ApiEndpoints
         return Results.Ok(new { message = $"Task '{taskName}' disabled" });
     }
 
-    // Ban management handlers
-    private static IResult GetBans(BanManager banManager)
-    {
-        var bans = banManager.GetAllBans();
-        return Results.Ok(new { bans, count = bans.Count });
-    }
-
-    private static IResult GetBan(int accountId, BanManager banManager)
-    {
-        var ban = banManager.GetBan(accountId);
-        return ban is null ? Results.NotFound() : Results.Ok(ban);
-    }
-
-    private static IResult CreateBan([FromBody] CreateBanRequest request, BanManager banManager)
-    {
-        var ban = banManager.BanPlayer(
-            request.AccountId,
-            request.PlayerName,
-            request.Reason,
-            request.BannedBy,
-            request.IsPermanent ? BanType.Permanent : BanType.Temporary,
-            request.DurationHours.HasValue ? TimeSpan.FromHours(request.DurationHours.Value) : null
-        );
-        return Results.Created($"/api/bans/{ban.AccountId}", ban);
-    }
-
-    private static IResult DeleteBan(int accountId, BanManager banManager)
-    {
-        var success = banManager.UnbanPlayer(accountId);
-        return success ? Results.Ok(new { message = "Player unbanned" }) : Results.NotFound();
-    }
-
-    private static IResult CheckBan(int accountId, BanManager banManager)
-    {
-        var isBanned = banManager.IsBanned(accountId);
-        var ban = banManager.GetBan(accountId);
-        return Results.Ok(new { isBanned, ban });
-    }
-
     // Replay management handlers
     private static IResult GetReplayStats(ReplayManager replayManager)
     {
@@ -2150,16 +2088,6 @@ public static class ApiEndpoints
     private record ConsoleCommand
     {
         public string? Command { get; init; }
-    }
-
-    private record CreateBanRequest
-    {
-        public int AccountId { get; init; }
-        public string PlayerName { get; init; } = string.Empty;
-        public string Reason { get; init; } = string.Empty;
-        public string BannedBy { get; init; } = "Admin";
-        public bool IsPermanent { get; init; } = true;
-        public int? DurationHours { get; init; }
     }
 
     private record SimulateEventRequest
