@@ -333,13 +333,13 @@ public class GameServerManager : IGameServerManager
         var proxyVoicePort = config.EnableProxy ? config.StartingVoicePort + instance.Id + 10000 - 1 : voicePort;
 
         // Build parameters string like Python: Set key value;Set key2 value2;...
-        // Must match Python's get_local_configuration() params
+        // Must match COMPEL's configuration
         var setCommands = new List<string>
         {
-            // Core server identity
-            $"Set svr_login {config.Login}:{instance.Id}",  // Python: f"{login}:{id}"
+            // Core server identity - matches COMPEL format
+            $"Set svr_login {config.Login}:{instance.Id}",  // e.g. KONGOR:1, KONGOR:2
             $"Set svr_password {config.Password}",
-            $"Set sv_masterName {config.Login}:",
+            $"Set man_masterLogin {config.Login}:",  // COMPEL: username + ":" - server manager appends index
             $"Set svr_slave {instance.Id}",
             $"Set svr_name {config.ServerName} {instance.Id} 0",  // No quotes needed
             $"Set svr_adminPassword",
@@ -390,7 +390,7 @@ public class GameServerManager : IGameServerManager
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             args.Add("-mod");
-            args.Add("game;PKOS");
+            args.Add("game;KONGOR");
             
             if (config.NoConsole)
             {
@@ -400,7 +400,7 @@ public class GameServerManager : IGameServerManager
         else
         {
             args.Add("-mod");
-            args.Add("game;PKOS");
+            args.Add("game;KONGOR");
         }
 
         // -execute with all Set commands
